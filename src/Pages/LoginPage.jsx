@@ -51,6 +51,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-center px-8 sm:px-16 lg:px-24 bg-white">
         <div className="max-w-md w-full mx-auto">
           <h2 className="text-3xl font-bold text-red-500 mb-2">Welcome!</h2>
+          {/* New note added here */}
+          <p className="text-sm text-gray-500 mb-6">This app is strictly for office employees.</p>
           
 
           <form onSubmit={handleLogin} className="space-y-4">
