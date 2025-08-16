@@ -21,9 +21,13 @@ export default function Menu() {
   // Menu items array (easily editable later)
   const [menuItems] = useState([
     { name: 'Jollof Rice', price: 500, status: 'available', image: '/jollof.jpeg' },
-    { name: 'Amala & Ewedu', price: 800, status: 'unavailable', image: '/amala.jpeg' },
-    { name: 'Fish', price: 300, status: 'available', image: '/fish.jpeg' },
-    { name: 'Porridge', price: 1000, status: 'available', image: '/porridge.jpeg' },
+    { name: 'Amala & Ewedu', price: 400, status: 'unavailable', image: '/amala.jpeg' },
+    { name: 'Grilled Fish', price: 300, status: 'available', image: '/fish (2).jpeg' },
+    { name: 'Porridge', price: 400, status: 'available', image: '/porridge.jpeg' },
+    {name: 'Rice and Beans', price: 600, status:'available',image:'/RRice and beans.jpeg'},
+    {name: 'Spaghetti',price:500, status:'unavailable',image:'Spaghetti.jpeg'},
+    {name:'Yam & Egg',price:400, status:'available',image:'Yam and Egg.jpeg'},
+    
   ]);
 
   const [quantities, setQuantities] = useState({});
@@ -101,12 +105,7 @@ export default function Menu() {
             <div className="text-right bg-white border px-4 py-2 rounded-xl shadow">
               <p className="text-sm text-gray-500">Remaining Allowance</p>
               <p className="text-xl font-bold text-red-500">₦{remainingAllowance}</p>
-              <button
-                onClick={() => navigate('/Topup')}
-                className="mt-1 bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-lg shadow"
-              >
-                Add Top-up
-              </button>
+              
             </div>
           </div>
         </div>
