@@ -59,12 +59,7 @@ export default function Dashboard() {
             <div className="text-right bg-white border px-4 py-2 rounded-xl shadow">
               <p className="text-sm text-gray-500">Remaining Balance</p>
               <p className="text-xl font-bold text-red-500">₦{remainingAllowance}</p>
-              <button
-                className="mt-1 bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-lg shadow"
-                onClick={() => navigate('/Topup')}
-              >
-                Add Top-up
-              </button>
+              
             </div>
           </div>
         </div>
