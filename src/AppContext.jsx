@@ -9,8 +9,8 @@ export const AppProvider = ({ children }) => {
   const [userEmail, setUserEmail] = useState('');
   const [lastOrdered, setLastOrdered] = useState([]);
   const [userName, setUserName] = useState('');
-  const [totalAllowance, setTotalAllowance] = useState(1200); 
-  const [remainingAllowance, setRemainingAllowance] = useState(1200);
+  const [totalAllowance, setTotalAllowance] = useState(2500); 
+  const [remainingAllowance, setRemainingAllowance] = useState(2500);
   const [topUpHistory, setTopUpHistory] = useState([]); 
 
   // This effect runs once on initial component mount to load data from localStorage
@@ -26,8 +26,8 @@ export const AppProvider = ({ children }) => {
       
       setCart(savedData.cart || []);
       setLastOrdered(savedData.lastOrdered || []);
-      setTotalAllowance(savedData.totalAllowance || 1200);
-      setRemainingAllowance(savedData.remainingAllowance || 1200);
+      setTotalAllowance(savedData.totalAllowance || 2500);
+      setRemainingAllowance(savedData.remainingAllowance || 2500);
       setQuantities(savedData.quantities || {});
       setServeOption(savedData.serveOption || '');
       setTopUpHistory(savedData.topUpHistory || []); 
