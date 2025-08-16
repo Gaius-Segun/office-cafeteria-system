@@ -22,7 +22,7 @@ export default function Profile() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h1 className="text-xl font-bold">Edit Profile</h1>
+          <h1 className="text-xl font-bold">Profile</h1>
           <button className="text-green-500 hover:text-green-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -92,7 +92,7 @@ export default function Profile() {
           <div>
             <label className="block text-gray-500 text-sm font-medium mb-1">Phone number</label>
             <div className="w-full bg-gray-100 text-gray-700 p-4 rounded-xl font-medium">
-              +91 6895312
+             08101137307
             </div>
           </div>
         </div>

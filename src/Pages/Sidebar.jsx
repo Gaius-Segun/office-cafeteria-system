@@ -40,7 +40,7 @@ export default function Sidebar() {
           <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-black font-bold shadow-sm">
             O
           </div>
-          {isExpanded && <span className="ml-3 font-bold text-lg text-gray-800">Office Bites</span>}
+          {isExpanded && <span className="ml-3 font-bold text-lg text-gray-800" style={{ fontFamily: 'Pacifico, cursive' }} >Office Bites</span>}
         </div>
 
         {/* Menu Items */}

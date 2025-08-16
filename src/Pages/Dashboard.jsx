@@ -48,7 +48,7 @@ export default function Dashboard() {
         {/* Top Bar */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h2 className="text-3xl font-bold">Good Morning, {userName} 👋</h2>
+            <h2 className="text-3xl font-bold" style={{ fontFamily: 'Pacifico, cursive' }}>Good Morning, {userName} 👋</h2>
             <p className="text-sm text-gray-500">You can manage your orders easily</p>
           </div>
           <div className="flex items-center space-x-6">

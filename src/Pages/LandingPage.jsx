@@ -67,7 +67,7 @@ export default function LandingPage() {
                     <div className="relative z-20">
                         <div className="flex items-center justify-between py-4">
                             {/* Logo with a new colorful gradient and bold text */}
-                            <div className="text-4xl font-extrabold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent" style={{ fontFamily: 'Pacifico, cursive' }}>Office Bite</div>
+                            <div className="text-4xl font-extrabold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent" style={{ fontFamily: 'Pacifico, cursive' }}>Office Bites</div>
                         </div>
                         
                         {/* Main Content Grid with fade-in animation */}
