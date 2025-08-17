@@ -80,7 +80,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-white flex items-center space-x-2">
             <span className="text-4xl animate-bounce">🍽️</span>
             <span className="bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-              Office Cafeteria
+              Office Bites
             </span>
           </h1>
         </div>

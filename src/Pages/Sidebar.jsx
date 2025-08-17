@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { FaHome, FaUtensils, FaHistory, FaUser, FaBell, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import { useAppContext } from '../AppContext';
@@ -19,21 +19,56 @@ export default function Sidebar() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
   const navigate = useNavigate();
-  const { logout, showNotification } = useAppContext(); // Destructure showNotification from context
+  
+  // Enhanced context usage for order notifications
+  const { 
+    logout, 
+    showNotification, 
+    activeOrders, 
+    orderReadyNotification,
+    getOrderRemainingTime 
+  } = useAppContext();
+
+  // State for notification pulse animation
+  const [notificationPulse, setNotificationPulse] = useState(false);
+
+  // Effect to trigger notification pulse when there's an order ready notification
+  useEffect(() => {
+    if (orderReadyNotification) {
+      setNotificationPulse(true);
+      // Reset pulse after animation
+      setTimeout(() => setNotificationPulse(false), 2000);
+    }
+  }, [orderReadyNotification]);
 
   const handleLogoutConfirmation = () => {
-    // Call the logout function to clear state and local storage
     logout(); 
-    // Navigate immediately after the logout logic to ensure redirection
     navigate('/');
     setShowLogoutModal(false);
   };
   
-  // New handler function for the notification button click
+  // Enhanced notification handler that shows different messages
   const handleShowNotification = () => {
-    // You can customize the message and type here
-    showNotification('You have a new message!', 'info');
+    if (orderReadyNotification) {
+      showNotification(orderReadyNotification.message, orderReadyNotification.type);
+    } else if (activeOrders.length > 0) {
+      const nextOrder = activeOrders[0];
+      const timeRemaining = getOrderRemainingTime(nextOrder.id);
+      showNotification(`Order #${nextOrder.id} will be ready in ${timeRemaining} seconds`, 'info');
+    } else {
+      showNotification('No active orders at the moment', 'info');
+    }
   };
+
+  // Calculate total notification count
+  const getNotificationCount = () => {
+    let count = 0;
+    if (orderReadyNotification) count += 1;
+    if (activeOrders.length > 0) count += activeOrders.length;
+    return count;
+  };
+
+  const notificationCount = getNotificationCount();
 
   return (
     <>
@@ -52,57 +87,116 @@ export default function Sidebar() {
         <div className="absolute top-20 right-6 w-0.5 h-0.5 bg-purple-400 rounded-full animate-pulse opacity-40 delay-300"></div>
         <div className="absolute bottom-32 right-3 w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce opacity-50 delay-700"></div>
 
-        {/* Logo / App Name with enhanced styling */}
+        {/* Enhanced Logo with order status indicator */}
         <div className="flex items-center mb-10 relative z-10">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 to-orange-400 rounded-2xl blur-lg opacity-60 animate-pulse"></div>
             <div className="relative w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center text-slate-900 font-bold shadow-2xl transform hover:scale-110 transition-all duration-300 hover:rotate-6">
               <span className="text-xl animate-bounce-subtle">O</span>
             </div>
+            {/* Active orders indicator on logo */}
+            {activeOrders.length > 0 && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold text-white animate-pulse">
+                {activeOrders.length}
+              </div>
+            )}
           </div>
           {isExpanded && (
             <div className="ml-4 overflow-hidden">
-              <span 
-                className="font-bold text-2xl bg-gradient-to-r from-yellow-400 via-orange-300 to-yellow-400 bg-clip-text text-transparent animate-fade-slide-in" 
-                style={{ fontFamily: 'Pacifico, cursive' }}
-              >
-                Office Bites
-              </span>
+              <div className="flex items-center gap-2">
+                <span 
+                  className="font-bold text-2xl bg-gradient-to-r from-yellow-400 via-orange-300 to-yellow-400 bg-clip-text text-transparent animate-fade-slide-in" 
+                  style={{ fontFamily: 'Pacifico, cursive' }}
+                >
+                  Office Bites
+                </span>
+                {/* Order status text */}
+                {activeOrders.length > 0 && (
+                  <span className="text-xs text-orange-300 animate-fade-slide-in delay-200">
+                    ({activeOrders.length} cooking)
+                  </span>
+                )}
+              </div>
               <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-yellow-400 to-transparent mt-1 animate-width-expand"></div>
             </div>
           )}
         </div>
 
-        {/* Menu Items with enhanced styling */}
+        {/* Menu Items with enhanced notification styling */}
         <ul className="flex flex-col space-y-3 flex-1 relative z-10">
           {menuItems.map((item, index) => {
-            // Conditionally render a NavLink or a button for the 'Notifications' item
+            // Enhanced Notifications item with badges and status
             if (item.isSpecial) {
               return (
                 <div 
                   key={item.label}
-                  onClick={handleShowNotification} // Add the onClick handler
-                  className={`group relative flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden
-                    hover:bg-white/10 hover:shadow-lg backdrop-blur-sm border border-transparent hover:border-white/20 cursor-pointer`}
+                  onClick={handleShowNotification}
+                  className={`group relative flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 transform hover:scale-105 overflow-hidden cursor-pointer
+                    ${orderReadyNotification ? 'bg-green-500/20 border border-green-500/30 shadow-lg shadow-green-500/20' : 
+                      activeOrders.length > 0 ? 'bg-orange-500/10 border border-orange-500/20' :
+                      'hover:bg-white/10 hover:shadow-lg backdrop-blur-sm border border-transparent hover:border-white/20'}
+                    ${notificationPulse ? 'animate-notification-pulse' : ''}`}
                   onMouseEnter={() => setHoveredItem(index)}
                   onMouseLeave={() => setHoveredItem(null)}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  {/* Hover glow effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                  {/* Enhanced hover glow effect */}
+                  <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                    orderReadyNotification ? 'bg-gradient-to-r from-green-500/30 to-emerald-500/30' :
+                    activeOrders.length > 0 ? 'bg-gradient-to-r from-orange-500/20 to-yellow-500/20' :
+                    'bg-gradient-to-r from-blue-500/20 to-purple-500/20'
+                  }`}></div>
                   
-                  {/* Icon with enhanced styling */}
+                  {/* Icon with notification states */}
                   <div className="relative z-10">
-                    <span className={`text-xl transition-all duration-300 text-slate-300 group-hover:text-white group-hover:scale-110 ${hoveredItem === index ? 'animate-wiggle' : ''}`}>
+                    <span className={`text-xl transition-all duration-300 ${
+                      orderReadyNotification ? 'text-green-400 animate-bounce-gentle' :
+                      activeOrders.length > 0 ? 'text-orange-400 animate-pulse' :
+                      'text-slate-300'
+                    } group-hover:text-white group-hover:scale-110 ${hoveredItem === index ? 'animate-wiggle' : ''}`}>
                       {item.icon}
                     </span>
+                    
+                    {/* Notification badge */}
+                    {notificationCount > 0 && (
+                      <div className={`absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg ${
+                        orderReadyNotification ? 'bg-green-500 animate-pulse' : 'bg-orange-500'
+                      }`}>
+                        {notificationCount > 9 ? '9+' : notificationCount}
+                      </div>
+                    )}
                   </div>
                   
-                  {/* Label with stagger animation */}
+                  {/* Enhanced label with status */}
                   {isExpanded && (
-                    <span className={`whitespace-nowrap relative z-10 transition-all duration-300 animate-fade-slide-in text-slate-200 group-hover:text-white font-medium`}>
-                      {item.label}
-                    </span>
+                    <div className="flex-1 relative z-10">
+                      <span className={`whitespace-nowrap transition-all duration-300 animate-fade-slide-in font-medium ${
+                        orderReadyNotification ? 'text-green-300' :
+                        activeOrders.length > 0 ? 'text-orange-300' :
+                        'text-slate-200'
+                      } group-hover:text-white`}>
+                        {item.label}
+                      </span>
+                      
+                      {/* Status text */}
+                      {orderReadyNotification && (
+                        <div className="text-xs text-green-400 animate-fade-slide-in delay-100">
+                          Order Ready!
+                        </div>
+                      )}
+                      {!orderReadyNotification && activeOrders.length > 0 && (
+                        <div className="text-xs text-orange-400 animate-fade-slide-in delay-100">
+                          {activeOrders.length} preparing
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Activity indicator */}
+                  {(orderReadyNotification || activeOrders.length > 0) && (
+                    <div className={`absolute right-2 w-2 h-2 rounded-full ${
+                      orderReadyNotification ? 'bg-green-400 animate-ping' : 'bg-orange-400 animate-pulse'
+                    }`}></div>
                   )}
                 </div>
               );
@@ -162,6 +256,29 @@ export default function Sidebar() {
           })}
         </ul>
 
+        {/* Active Orders Summary (when expanded) */}
+        {isExpanded && activeOrders.length > 0 && (
+          <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl backdrop-blur-sm relative z-10">
+            <div className="text-xs text-orange-300 font-semibold mb-2">Active Orders</div>
+            <div className="space-y-1">
+              {activeOrders.slice(0, 2).map((order) => {
+                const timeRemaining = getOrderRemainingTime(order.id);
+                return (
+                  <div key={order.id} className="text-xs text-slate-300 flex justify-between items-center">
+                    <span>Order #{order.id}</span>
+                    <span className="text-orange-400">{timeRemaining}s</span>
+                  </div>
+                );
+              })}
+              {activeOrders.length > 2 && (
+                <div className="text-xs text-slate-400">
+                  +{activeOrders.length - 2} more...
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Enhanced Logout Button */}
         <div className="mt-auto pt-6 border-t border-slate-700/50 relative z-10">
           <button
@@ -193,7 +310,7 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Custom CSS for animations */}
+      {/* Enhanced CSS for animations */}
       <style jsx>{`
         @keyframes gradient-flow {
           0% { background-position: 0% 0%; }
@@ -241,6 +358,17 @@ export default function Sidebar() {
           75% { transform: rotate(3deg) scale(1.1); }
         }
         
+        @keyframes notification-pulse {
+          0%, 100% { 
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+          }
+          50% { 
+            transform: scale(1.05);
+            box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+          }
+        }
+        
         .animate-gradient-flow {
           background-size: 200% 200%;
           animation: gradient-flow 3s ease infinite;
@@ -265,6 +393,10 @@ export default function Sidebar() {
         
         .animate-wiggle {
           animation: wiggle 0.5s ease-in-out;
+        }
+        
+        .animate-notification-pulse {
+          animation: notification-pulse 1.5s ease-in-out;
         }
       `}</style>
     </>
