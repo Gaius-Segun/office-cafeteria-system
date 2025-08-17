@@ -12,6 +12,9 @@ export const AppProvider = ({ children }) => {
   const [totalAllowance, setTotalAllowance] = useState(2500); 
   const [remainingAllowance, setRemainingAllowance] = useState(2500);
   const [topUpHistory, setTopUpHistory] = useState([]); 
+  
+  // New state for notification management
+  const [notification, setNotification] = useState(null);
 
   // This effect runs once on initial component mount to load data from localStorage
   useEffect(() => {
@@ -72,6 +75,16 @@ export const AppProvider = ({ children }) => {
   const addTopUpToHistory = useCallback((newTopUp) => {
     setTopUpHistory(prevHistory => [...prevHistory, newTopUp]);
   }, []);
+  
+  // New function to show a notification
+  const showNotification = useCallback((message, type = 'info') => {
+    setNotification({ message, type });
+  }, []);
+  
+  // New function to hide the notification
+  const hideNotification = useCallback(() => {
+    setNotification(null);
+  }, []);
 
   const resetCart = () => {
     setCart([]);
@@ -131,7 +144,11 @@ export const AppProvider = ({ children }) => {
         logout,
         addOrderToHistory,
         addTopUpToHistory, 
-        topUpHistory 
+        topUpHistory,
+        // Expose notification state and functions to the context
+        notification,
+        showNotification,
+        hideNotification
       }}
     >
       {children}
