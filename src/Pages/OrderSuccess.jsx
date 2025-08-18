@@ -7,8 +7,13 @@ import { useAppContext } from '../AppContext';
 export default function OrderSuccess() {
   const navigate = useNavigate();
   const location = useLocation();
-  // Get the new function from context, which will handle adding the order to history
-  const { userEmail, addOrderToHistory } = useAppContext();
+  // Get the new functions from context, including the order ready timer
+  const { 
+    userEmail, 
+    addOrderToHistory, 
+    startOrderReadyTimer,
+    showNotification 
+  } = useAppContext();
   const [fadeIn, setFadeIn] = useState(false);
   const [latestOrder, setLatestOrder] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -35,6 +40,32 @@ export default function OrderSuccess() {
         console.error('addOrderToHistory function not found in AppContext.');
       }
       
+      // 🎯 NEW: Start the 30-second order ready timer
+      if (typeof startOrderReadyTimer === 'function') {
+        const orderData = {
+          orderId: newOrder.orderId,
+          items: newOrder.items,
+          total: newOrder.total,
+          restaurantName: newOrder.items.length > 0 ? 'Food Court' : 'Restaurant'
+        };
+        
+        // Start the 30-second timer for "order ready" notification
+        startOrderReadyTimer(orderData, 30); // 30 seconds
+        
+        console.log('Order ready timer started for order:', newOrder.orderId);
+      } else {
+        console.error('startOrderReadyTimer function not found in AppContext.');
+      }
+      
+      // 🎯 NEW: Show immediate success notification
+      if (typeof showNotification === 'function') {
+        showNotification({
+          type: 'success',
+          message: `Order placed successfully! Your food will be ready in 30 seconds.`,
+          duration: 5000
+        });
+      }
+      
       // Set the state to display the order that was just placed
       setLatestOrder(newOrder);
       // Set the flag to true so the logic won't run again
@@ -46,7 +77,7 @@ export default function OrderSuccess() {
       setFadeIn(true);
       setShowConfetti(true);
     }, 100);
-  }, [userEmail, location.state, addOrderToHistory]); // Add addOrderToHistory to dependencies
+  }, [userEmail, location.state, addOrderToHistory, startOrderReadyTimer, showNotification]); // Add new dependencies
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 text-gray-900 relative overflow-hidden">
@@ -101,6 +132,16 @@ export default function OrderSuccess() {
             Order Placed Successfully!
           </h2>
 
+          {/* 🎯 NEW: Order preparation status indicator */}
+          <div className="mb-6 text-center animate-fade-in-up delay-200">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-100 to-amber-100 rounded-full border border-orange-200">
+              <div className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></div>
+              <span className="text-orange-700 font-medium text-sm">
+                🍳 Preparing your order... Ready in ~30 seconds!
+              </span>
+            </div>
+          </div>
+
           {latestOrder ? (
             <div className="text-gray-700 w-full animate-fade-in-up delay-300">
               <div className="text-center mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100">
@@ -109,7 +150,10 @@ export default function OrderSuccess() {
                   <span className="font-bold text-emerald-700">
                     {latestOrder.items.map(item => item.name).join(', ')}
                   </span>{' '}
-                  has been completed successfully!
+                  has been placed successfully!
+                </p>
+                <p className="text-sm text-emerald-600 mt-2 font-medium">
+                  💫 You'll be notified when it's ready for pickup!
                 </p>
               </div>
               
@@ -143,9 +187,15 @@ export default function OrderSuccess() {
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-700">Status:</span>
                     <div className="flex items-center">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
-                      <span className="text-emerald-600 font-semibold">Completed</span>
+                      <div className="w-2 h-2 bg-orange-500 rounded-full mr-2 animate-pulse"></div>
+                      <span className="text-orange-600 font-semibold">Preparing</span>
                     </div>
+                  </div>
+                  
+                  {/* 🎯 NEW: Order ID for reference */}
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Order ID:</span>
+                    <span className="text-gray-600 font-mono text-sm">#{latestOrder.orderId}</span>
                   </div>
                 </div>
               </div>
@@ -230,6 +280,10 @@ export default function OrderSuccess() {
         .animate-fade-in-up {
           animation: fade-in-up 0.8s ease-out forwards;
           opacity: 0;
+        }
+        
+        .delay-200 {
+          animation-delay: 200ms;
         }
         
         .delay-300 {

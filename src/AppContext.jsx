@@ -84,41 +84,75 @@ export const AppProvider = ({ children }) => {
     setTopUpHistory(prevHistory => [...prevHistory, newTopUp]);
   }, []);
   
-  // Existing notification functions
-  const showNotification = useCallback((message, type = 'info') => {
-    setNotification({ message, type });
+  // 🎯 UPDATED: Enhanced notification function with object support
+  const showNotification = useCallback((messageOrConfig, type = 'info', duration = 5000) => {
+    // Support both old string format and new object format
+    if (typeof messageOrConfig === 'string') {
+      setNotification({ 
+        message: messageOrConfig, 
+        type,
+        duration,
+        orderData: null
+      });
+    } else {
+      // New object format: { message, type, duration, orderData }
+      setNotification({
+        duration: 5000,
+        orderData: null,
+        ...messageOrConfig // Spread the config object
+      });
+    }
   }, []);
   
   const hideNotification = useCallback(() => {
     setNotification(null);
   }, []);
 
-  // NEW: Order ready notification functions
+  // 🎯 UPDATED: Enhanced order ready notification with proper structure
   const showOrderReadyNotification = useCallback((orderData, customMessage = null) => {
-    const message = customMessage || `🎉 Order #${orderData.id} is ready for pickup!`;
+    const message = customMessage || "Your delicious food is ready for pickup!";
+    
+    // Use the new notification structure for order-ready type
     setOrderReadyNotification({
       message,
-      type: 'success',
-      orderData
+      type: 'order-ready', // 🎯 NEW: Use special order-ready type
+      duration: 8000, // Longer duration for important notifications
+      orderData: {
+        orderId: orderData.orderId || orderData.id,
+        items: orderData.items || [],
+        total: orderData.total,
+        restaurantName: orderData.restaurantName || 'Food Court'
+      }
     });
+    
+    console.log('Order ready notification shown for order:', orderData.orderId || orderData.id);
   }, []);
 
   const hideOrderReadyNotification = useCallback(() => {
     setOrderReadyNotification(null);
   }, []);
 
-  // NEW: Start order ready timer (call this when order is placed)
+  // 🎯 UPDATED: Enhanced timer start with better order ID handling
   const startOrderReadyTimer = useCallback((orderData, delaySeconds = 30) => {
-    const orderId = orderData.id || `order_${Date.now()}`;
-    const orderWithId = { ...orderData, id: orderId, timestamp: Date.now() };
+    const orderId = orderData.orderId || orderData.id || `order_${Date.now()}`;
+    const orderWithId = { 
+      ...orderData, 
+      id: orderId, 
+      orderId: orderId, // Ensure both formats are available
+      timestamp: Date.now() 
+    };
     
     // Clear existing timer if any
     if (orderTimers.has(orderId)) {
       clearTimeout(orderTimers.get(orderId));
     }
 
-    // Show immediate order confirmation
-    showNotification(`Order #${orderId} placed successfully! You'll be notified when it's ready.`, 'success');
+    // 🎯 UPDATED: Show immediate order confirmation with new format
+    showNotification({
+      message: `Order placed successfully! Your food will be ready in ${delaySeconds} seconds.`,
+      type: 'success',
+      duration: 5000
+    });
 
     // Add to active orders
     setActiveOrders(prev => [...prev.filter(order => order.id !== orderId), orderWithId]);
@@ -136,11 +170,14 @@ export const AppProvider = ({ children }) => {
         newTimers.delete(orderId);
         return newTimers;
       });
+      
+      console.log(`Order ${orderId} is now ready!`);
     }, delaySeconds * 1000);
 
     // Store timer reference
     setOrderTimers(prev => new Map(prev).set(orderId, timerId));
 
+    console.log(`Started ${delaySeconds}s timer for order ${orderId}`);
     return orderId; // Return the order ID for reference
   }, [showNotification, showOrderReadyNotification, orderTimers]);
 
@@ -153,6 +190,7 @@ export const AppProvider = ({ children }) => {
         newTimers.delete(orderId);
         return newTimers;
       });
+      console.log(`Cancelled timer for order ${orderId}`);
     }
     
     setActiveOrders(prev => prev.filter(order => order.id !== orderId));
@@ -160,7 +198,7 @@ export const AppProvider = ({ children }) => {
 
   // NEW: Get remaining time for an order
   const getOrderRemainingTime = useCallback((orderId) => {
-    const order = activeOrders.find(order => order.id === orderId);
+    const order = activeOrders.find(order => order.id === orderId || order.orderId === orderId);
     if (!order) return 0;
     
     const elapsed = Math.floor((Date.now() - order.timestamp) / 1000);
@@ -168,20 +206,25 @@ export const AppProvider = ({ children }) => {
     return remaining;
   }, [activeOrders]);
 
-  // Enhanced order completion that includes timer management
+  // 🎯 UPDATED: Enhanced order completion with better error handling
   const completeOrderAndDeductBalance = useCallback((total, orderData = null) => {
     if (total <= remainingAllowance) {
       setRemainingAllowance(prev => prev - total);
       
       // If order data is provided, start the ready timer
       if (orderData) {
-        const orderId = startOrderReadyTimer(orderData, 30);
-        return { success: true, orderId };
+        try {
+          const orderId = startOrderReadyTimer(orderData, 30);
+          return { success: true, orderId };
+        } catch (error) {
+          console.error('Error starting order timer:', error);
+          return { success: true, orderId: null };
+        }
       }
       
       return { success: true };
     }
-    return { success: false };
+    return { success: false, error: 'Insufficient balance' };
   }, [remainingAllowance, startOrderReadyTimer]);
 
   const resetCart = () => {
@@ -200,6 +243,7 @@ export const AppProvider = ({ children }) => {
     setOrderTimers(new Map());
     setActiveOrders([]);
     setOrderReadyNotification(null);
+    setNotification(null); // Clear regular notifications too
     
     if (userEmail) {
       localStorage.removeItem(`userData_${userEmail}`);
@@ -243,12 +287,12 @@ export const AppProvider = ({ children }) => {
         addTopUpToHistory, 
         topUpHistory,
         
-        // Existing notification system
+        // 🎯 UPDATED: Enhanced notification system
         notification,
         showNotification,
         hideNotification,
         
-        // NEW: Order ready notification system
+        // 🎯 UPDATED: Enhanced order ready notification system
         orderReadyNotification,
         showOrderReadyNotification,
         hideOrderReadyNotification,
