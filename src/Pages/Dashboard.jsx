@@ -9,7 +9,10 @@ export default function Dashboard() {
     totalAllowance, 
     remainingAllowance, 
     lastOrdered,
-    topUpHistory,
+    // 🎯 NEW: Order ready notification system integration
+    activeOrders,
+    getOrderRemainingTime,
+    orderReadyNotification
   } = useAppContext();
   const navigate = useNavigate();
 
@@ -25,7 +28,6 @@ export default function Dashboard() {
   // Calculate dynamic statistics
   const totalOrders = lastOrdered.length;
   const ordersToday = lastOrdered.filter(order => isToday(order.timestamp)).length;
-  const totalTopUps = topUpHistory.length;
   const totalSales = lastOrdered.reduce((sum, order) => sum + order.total, 0);
 
   // Calculate order status counts and percentages
@@ -40,11 +42,101 @@ export default function Dashboard() {
   const readyForPickupPercentage = totalTrackedOrders > 0 ? (readyForPickupOrders / totalTrackedOrders) * 100 : 0;
   const completedPercentage = totalTrackedOrders > 0 ? (completedOrders / totalTrackedOrders) * 100 : 0;
 
+  // 🎯 NEW: Active orders helper functions
+  const hasActiveOrders = activeOrders.length > 0;
+  const nextOrderReady = activeOrders.length > 0 ? activeOrders[0] : null;
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Sidebar />
 
       <div className="flex-1 p-6 overflow-y-auto">
+        {/* 🎯 NEW: Active Order Banner */}
+        {hasActiveOrders && (
+          <div className="mb-6 animate-fade-in">
+            <div className="bg-gradient-to-r from-orange-100 via-amber-50 to-yellow-100 border-2 border-orange-200 rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-amber-500 rounded-full flex items-center justify-center animate-pulse">
+                      <span className="text-white text-xl">🍳</span>
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">{activeOrders.length}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-orange-800">Your Food is Being Prepared! 🔥</h3>
+                    <p className="text-orange-700">
+                      {activeOrders.length} order{activeOrders.length > 1 ? 's' : ''} currently being prepared
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {nextOrderReady && (
+                    <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200">
+                      <p className="text-sm text-orange-600 font-medium mb-1">Next Order Ready In:</p>
+                      <div className="text-2xl font-bold text-orange-700">
+                        {getOrderRemainingTime(nextOrderReady.id)}s
+                      </div>
+                      <p className="text-xs text-orange-600 mt-1">Order #{nextOrderReady.id}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Active Orders List */}
+              <div className="mt-4 flex space-x-3 overflow-x-auto">
+                {activeOrders.map((order, index) => {
+                  const remaining = getOrderRemainingTime(order.id);
+                  return (
+                    <div key={order.id} className="flex-shrink-0 bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-orange-200 min-w-[200px]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-orange-800">Order #{order.id}</span>
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse mr-1"></div>
+                          <span className="text-xs text-orange-600">{remaining}s</span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {order.items?.slice(0, 2).map((item, i) => (
+                          <p key={i} className="text-xs text-gray-700">{item.name} x{item.quantity}</p>
+                        ))}
+                        {order.items?.length > 2 && (
+                          <p className="text-xs text-gray-500">+{order.items.length - 2} more items</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🎯 NEW: Order Ready Alert */}
+        {orderReadyNotification && (
+          <div className="mb-6 animate-bounce">
+            <div className="bg-gradient-to-r from-green-100 via-emerald-50 to-teal-100 border-2 border-green-300 rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white text-2xl animate-bounce">🎉</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-green-800 mb-1">Order Ready for Pickup! 🍽️</h3>
+                  <p className="text-green-700">{orderReadyNotification.message}</p>
+                </div>
+                <button 
+                  onClick={() => navigate('/order-history')}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition-colors duration-200"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Top Bar with enhanced styling */}
         <div className="flex justify-between items-center mb-8 animate-fade-in">
           <div className="animate-slide-down">
@@ -54,12 +146,12 @@ export default function Dashboard() {
             <p className="text-gray-600 text-lg">You can manage your orders easily</p>
           </div>
           <div className="flex items-center space-x-6 animate-slide-down">
-            <div className="text-right bg-white/80 backdrop-blur-sm border border-green-200 px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="text-right bg-white/80 backdrop-blur-sm border border-green-200 px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 relative">
               <p className="text-sm text-gray-600 font-medium">Daily Allowance</p>
               <p className="text-2xl font-bold text-green-600">₦{totalAllowance}</p>
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-emerald-400/10 rounded-2xl"></div>
             </div>
-            <div className="text-right bg-white/80 backdrop-blur-sm border border-red-200 px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="text-right bg-white/80 backdrop-blur-sm border border-red-200 px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 relative">
               <p className="text-sm text-gray-600 font-medium">Remaining Balance</p>
               <p className="text-2xl font-bold text-red-500">₦{remainingAllowance}</p>
               <div className="absolute inset-0 bg-gradient-to-r from-red-400/10 to-pink-400/10 rounded-2xl"></div>
@@ -81,15 +173,19 @@ export default function Dashboard() {
             <div className="absolute -bottom-10 -right-10 w-20 h-20 bg-white/10 rounded-full"></div>
           </div>
 
-          <div className="group bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 animate-slide-up cursor-pointer relative overflow-hidden" style={{ animationDelay: '0.1s' }}>
+          {/* 🎯 NEW: Active Orders Metric */}
+          <div className="group bg-gradient-to-br from-orange-400 to-red-500 text-white p-6 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 animate-slide-up cursor-pointer relative overflow-hidden" style={{ animationDelay: '0.1s' }}>
             <div className="absolute inset-0 bg-white/10 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative z-10 flex items-center justify-between">
               <div>
-                <p className="text-4xl font-bold mb-2 animate-number-bounce">{totalTopUps}</p>
-                <p className="text-sm opacity-90 font-medium">Top-ups</p>
+                <p className="text-4xl font-bold mb-2 animate-number-bounce">{activeOrders.length}</p>
+                <p className="text-sm opacity-90 font-medium">Preparing Now</p>
               </div>
-              <div className="text-5xl group-hover:scale-110 transition-transform duration-300">💰</div>
+              <div className="text-5xl group-hover:scale-110 transition-transform duration-300">🍳</div>
             </div>
+            {activeOrders.length > 0 && (
+              <div className="absolute top-2 right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+            )}
             <div className="absolute -bottom-10 -right-10 w-20 h-20 bg-white/10 rounded-full"></div>
           </div>
 

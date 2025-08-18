@@ -256,8 +256,9 @@ export const AppProvider = ({ children }) => {
     setCart([]);
     setLastOrdered([]);
     setServeOption('');
-    setTotalAllowance(1200);
-    setRemainingAllowance(1200);
+    // 🎯 FIXED: Changed from 1200 to 2500 to match initial allowance
+    setTotalAllowance(2500);
+    setRemainingAllowance(2500);
     setTopUpHistory([]); 
   };
 
