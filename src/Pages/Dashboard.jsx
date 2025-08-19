@@ -332,7 +332,7 @@ export default function Dashboard() {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             <MealCard name="Jollof Rice" price={500} status="available" imageSrc="/jollof.jpeg" onClick={() => navigate('/menu')} />
-            <MealCard name="Amala & Ewedu" price={400} status="available" imageSrc="/amala.jpeg" onClick={() => navigate('/menu')} />
+            <MealCard name="Amala & Ewedu" price={400} status="unavailable" imageSrc="/amala.jpeg" onClick={() => navigate('/menu')} />
             <MealCard name="Porridge" price={300} status="available" imageSrc="/porridge.jpeg" onClick={() => navigate('/menu')} />
           </div>
           <button

@@ -12,6 +12,7 @@ import OrderHistory from './Pages/OrderHistory';
 import OrderDetails from './Pages/OrderDetails';
 import Notification from './Pages/Notification';
 import { AppProvider, useAppContext } from './AppContext';
+import AdminDashboard from './Pages/AdminDashboard'
 
 // Enhanced AppContent with support for order ready notifications
 function AppContent() {
@@ -39,6 +40,7 @@ function AppContent() {
         <Route path="/order-history" element={<OrderHistory />} />
         {/* This is the corrected route with a dynamic parameter */}
         <Route path="/order/:index" element={<OrderDetails />} />
+        <Route path="/admindashboard" element={<AdminDashboard/>}/>
       </Routes>
 
       {/* Regular notifications (login errors, form validations, etc.) */}

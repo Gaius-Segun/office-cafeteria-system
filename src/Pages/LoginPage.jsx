@@ -2,41 +2,56 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../AppContext';
 
+/**
+ * The LoginPage component provides a user interface for signing in.
+ * It uses dummy user data for demonstration purposes and handles
+ * authentication and redirection based on the user's role.
+ */
 export default function LoginPage() {
+  // State for form inputs and UI feedback
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Hooks for navigation and accessing global state
   const navigate = useNavigate();
-  const { setUserEmail, setCart, setLastOrdered } = useAppContext();
+  const { login } = useAppContext();
 
-  // Predefined dummy users (for testing)
+  // Predefined dummy users for testing. In a real app, this would be a database.
+  // The 'role' field is new, enabling different user experiences.
   const users = {
-    "gaiussegun37@gmail.com": "gesundheit.555",
-    "walker123@gmail.com": "test123",
-    "marydoe@gmail.com": "pass456"
+    "gaiussegun37@gmail.com": { password: "gesundheit.555", name: "Gaius Segun", role: "user" },
+    "walker123@gmail.com": { password: "test123", name: "Walker", role: "user" },
+    "marydoe@gmail.com": { password: "pass456", name: "Mary Doe", role: "user" },
+    "admin@gmail.com": { password: "admin", name: "Admin", role: "admin" } // NEW: Admin account
   };
 
+  /**
+   * Handles the login form submission.
+   * It simulates a network request, checks credentials, and navigates
+   * the user to the appropriate dashboard based on their role.
+   */
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     
-    // Simulate loading delay for better UX
+    // Simulate a network delay for a more realistic user experience
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    if (users[email] && users[email] === password) {
-      setUserEmail(email);
-      const savedData = JSON.parse(localStorage.getItem(`userData_${email}`)) || {
-        cart: [],
-        lastOrdered: []
-      };
-      setCart(savedData.cart);
-      setLastOrdered(savedData.lastOrdered);
-      navigate('/dashboard');
+    // Check if the entered email and password match a predefined user
+    const user = users[email];
+    if (user && user.password === password) {
+      // Use the global `login` function to set user data and role in the app context
+      login(email, user.name, user.role); 
+      
+      // Determine the navigation path based on the user's role
+      const redirectPath = user.role === 'admin' ? '/admin-dashboard' : '/dashboard';
+      navigate(redirectPath);
     } else {
+      // If credentials are invalid, show an error message
       setError('Invalid credentials');
     }
     
@@ -44,7 +59,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden font-inter">
       {/* Animated Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
@@ -212,8 +227,8 @@ export default function LoginPage() {
                 <span>Demo Credentials:</span>
               </p>
               <div className="space-y-2 text-xs text-blue-700">
-                <p><span className="font-medium">Email:</span> gaiussegun37@gmail.com</p>
-                <p><span className="font-medium">Password:</span> gesundheit.555</p>
+                <p><span className="font-medium">User:</span> gaiussegun37@gmail.com | Password: gesundheit.555</p>
+                <p><span className="font-medium">Admin:</span> admin@gmail.com | Password: admin</p>
               </div>
             </div>
           </div>
@@ -227,6 +242,7 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Style block remains the same */}
       <style jsx>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }

@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+// Create a new context for our application state
 const AppContext = createContext();
 
+// This is the provider component that will wrap your entire application
 export const AppProvider = ({ children }) => {
+  // We'll store all our global state here
   const [cart, setCart] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [serveOption, setServeOption] = useState('');
@@ -13,21 +16,24 @@ export const AppProvider = ({ children }) => {
   const [remainingAllowance, setRemainingAllowance] = useState(2500);
   const [topUpHistory, setTopUpHistory] = useState([]); 
   
-  // Existing notification state
+  // NEW: Admin-specific state
+  const [userRole, setUserRole] = useState('user'); // Default to 'user'
+
   const [notification, setNotification] = useState(null);
-  
-  // NEW: Order ready notification system
   const [orderReadyNotification, setOrderReadyNotification] = useState(null);
   const [activeOrders, setActiveOrders] = useState([]);
   const [orderTimers, setOrderTimers] = useState(new Map());
 
-  // This effect runs once on initial component mount to load data from localStorage
+  // Effect to load user data from localStorage on initial render
   useEffect(() => {
     const email = localStorage.getItem('loggedInUserEmail');
     const name = localStorage.getItem('loggedInUserName');
+    const role = localStorage.getItem('loggedInUserRole'); // NEW: Load user role
+    
     if (email) {
       setUserEmail(email);
       setUserName(name || 'User'); 
+      setUserRole(role || 'user'); // NEW: Set user role from localStorage
       const savedData = JSON.parse(localStorage.getItem(`userData_${email}`)) || {};
       
       setCart(savedData.cart || []);
@@ -42,7 +48,7 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  // This effect saves all persistent data to localStorage whenever it changes
+  // Effect to save user data to localStorage whenever a relevant state changes
   useEffect(() => {
     if (userEmail) {
       const existingData = JSON.parse(localStorage.getItem(`userData_${userEmail}`)) || {};
@@ -61,32 +67,37 @@ export const AppProvider = ({ children }) => {
       );
     }
     
+    // Save user credentials separately for quick access on reload
     if (userName) {
       localStorage.setItem('loggedInUserName', userName);
     }
     if (userEmail) {
       localStorage.setItem('loggedInUserEmail', userEmail);
     }
-  }, [cart, lastOrdered, userEmail, userName, totalAllowance, remainingAllowance, quantities, serveOption, topUpHistory]);
+    if (userRole) { // NEW: Save user role to localStorage
+      localStorage.setItem('loggedInUserRole', userRole);
+    }
+  }, [cart, lastOrdered, userEmail, userName, userRole, totalAllowance, remainingAllowance, quantities, serveOption, topUpHistory]);
 
-  // NEW: Cleanup timers on unmount
+  // Clean up any active timers when the component unmounts
   useEffect(() => {
     return () => {
       orderTimers.forEach(timerId => clearTimeout(timerId));
     };
   }, [orderTimers]);
 
+  // Adds a new order to the user's order history
   const addOrderToHistory = useCallback((newOrder) => {
     setLastOrdered(prevHistory => [...prevHistory, { ...newOrder, status: 'Placed' }]);
   }, []);
 
+  // Adds a new top-up transaction to the history
   const addTopUpToHistory = useCallback((newTopUp) => {
     setTopUpHistory(prevHistory => [...prevHistory, newTopUp]);
   }, []);
   
-  // 🎯 UPDATED: Enhanced notification function with object support
+  // Displays a general notification
   const showNotification = useCallback((messageOrConfig, type = 'info', duration = 5000) => {
-    // Support both old string format and new object format
     if (typeof messageOrConfig === 'string') {
       setNotification({ 
         message: messageOrConfig, 
@@ -95,28 +106,27 @@ export const AppProvider = ({ children }) => {
         orderData: null
       });
     } else {
-      // New object format: { message, type, duration, orderData }
       setNotification({
         duration: 5000,
         orderData: null,
-        ...messageOrConfig // Spread the config object
+        ...messageOrConfig
       });
     }
   }, []);
   
+  // Hides the general notification
   const hideNotification = useCallback(() => {
     setNotification(null);
   }, []);
 
-  // 🎯 UPDATED: Enhanced order ready notification with proper structure
+  // Displays a specific "Order Ready" notification
   const showOrderReadyNotification = useCallback((orderData, customMessage = null) => {
     const message = customMessage || "Your delicious food is ready for pickup!";
     
-    // Use the new notification structure for order-ready type
     setOrderReadyNotification({
       message,
-      type: 'order-ready', // 🎯 NEW: Use special order-ready type
-      duration: 8000, // Longer duration for important notifications
+      type: 'order-ready',
+      duration: 8000,
       orderData: {
         orderId: orderData.orderId || orderData.id,
         items: orderData.items || [],
@@ -128,43 +138,38 @@ export const AppProvider = ({ children }) => {
     console.log('Order ready notification shown for order:', orderData.orderId || orderData.id);
   }, []);
 
+  // Hides the "Order Ready" notification
   const hideOrderReadyNotification = useCallback(() => {
     setOrderReadyNotification(null);
   }, []);
 
-  // 🎯 UPDATED: Enhanced timer start with better order ID handling
+  // Starts a timer for a new order and shows a confirmation
   const startOrderReadyTimer = useCallback((orderData, delaySeconds = 30) => {
     const orderId = orderData.orderId || orderData.id || `order_${Date.now()}`;
     const orderWithId = { 
       ...orderData, 
       id: orderId, 
-      orderId: orderId, // Ensure both formats are available
+      orderId: orderId,
       timestamp: Date.now() 
     };
     
-    // Clear existing timer if any
     if (orderTimers.has(orderId)) {
       clearTimeout(orderTimers.get(orderId));
     }
 
-    // 🎯 UPDATED: Show immediate order confirmation with new format
     showNotification({
       message: `Order placed successfully! Your food will be ready in ${delaySeconds} seconds.`,
       type: 'success',
       duration: 5000
     });
 
-    // Add to active orders
     setActiveOrders(prev => [...prev.filter(order => order.id !== orderId), orderWithId]);
 
-    // Set timer for order ready notification
     const timerId = setTimeout(() => {
       showOrderReadyNotification(orderWithId);
       
-      // Remove from active orders
       setActiveOrders(prev => prev.filter(order => order.id !== orderId));
       
-      // Clean up timer reference
       setOrderTimers(prev => {
         const newTimers = new Map(prev);
         newTimers.delete(orderId);
@@ -174,14 +179,12 @@ export const AppProvider = ({ children }) => {
       console.log(`Order ${orderId} is now ready!`);
     }, delaySeconds * 1000);
 
-    // Store timer reference
     setOrderTimers(prev => new Map(prev).set(orderId, timerId));
-
     console.log(`Started ${delaySeconds}s timer for order ${orderId}`);
-    return orderId; // Return the order ID for reference
+    return orderId;
   }, [showNotification, showOrderReadyNotification, orderTimers]);
 
-  // NEW: Cancel order timer (if order is cancelled)
+  // Cancels a specific order timer
   const cancelOrderTimer = useCallback((orderId) => {
     if (orderTimers.has(orderId)) {
       clearTimeout(orderTimers.get(orderId));
@@ -196,22 +199,21 @@ export const AppProvider = ({ children }) => {
     setActiveOrders(prev => prev.filter(order => order.id !== orderId));
   }, [orderTimers]);
 
-  // NEW: Get remaining time for an order
+  // Calculates the remaining time for an order
   const getOrderRemainingTime = useCallback((orderId) => {
     const order = activeOrders.find(order => order.id === orderId || order.orderId === orderId);
     if (!order) return 0;
     
     const elapsed = Math.floor((Date.now() - order.timestamp) / 1000);
-    const remaining = Math.max(0, 30 - elapsed); // Default 30 seconds
+    const remaining = Math.max(0, 30 - elapsed);
     return remaining;
   }, [activeOrders]);
 
-  // 🎯 UPDATED: Enhanced order completion with better error handling
+  // Deducts the order total from the user's remaining allowance
   const completeOrderAndDeductBalance = useCallback((total, orderData = null) => {
     if (total <= remainingAllowance) {
       setRemainingAllowance(prev => prev - total);
       
-      // If order data is provided, start the ready timer
       if (orderData) {
         try {
           const orderId = startOrderReadyTimer(orderData, 30);
@@ -227,85 +229,97 @@ export const AppProvider = ({ children }) => {
     return { success: false, error: 'Insufficient balance' };
   }, [remainingAllowance, startOrderReadyTimer]);
 
+  // Resets the shopping cart
   const resetCart = () => {
     setCart([]);
     setQuantities({});
     setServeOption('');
   };
 
+  // Adds a specified amount to the remaining allowance
   const handleAddTopUp = (topUpAmount) => {
     setRemainingAllowance(prev => prev + topUpAmount);
   };
   
+  // NEW: Login function that sets user data and role and saves to localStorage
+  const login = (email, name, role = 'user') => {
+    localStorage.setItem('loggedInUserEmail', email);
+    localStorage.setItem('loggedInUserName', name);
+    localStorage.setItem('loggedInUserRole', role); // Save the role
+    setUserEmail(email);
+    setUserName(name);
+    setUserRole(role);
+  };
+
+  // NEW: Logout function that clears all user data and state
   const logout = () => {
-    // Clear all order timers on logout
     orderTimers.forEach(timerId => clearTimeout(timerId));
     setOrderTimers(new Map());
     setActiveOrders([]);
     setOrderReadyNotification(null);
-    setNotification(null); // Clear regular notifications too
+    setNotification(null);
     
     if (userEmail) {
       localStorage.removeItem(`userData_${userEmail}`);
     }
     localStorage.removeItem('loggedInUserEmail');
     localStorage.removeItem('loggedInUserName');
+    localStorage.removeItem('loggedInUserRole'); // NEW: Clear user role on logout
 
     setUserEmail('');
     setUserName('');
+    setUserRole('user'); // Reset role to default
     setCart([]);
     setLastOrdered([]);
     setServeOption('');
-    // 🎯 FIXED: Changed from 1200 to 2500 to match initial allowance
     setTotalAllowance(2500);
     setRemainingAllowance(2500);
     setTopUpHistory([]); 
   };
 
+  // The context value, exposing all relevant state and functions
+  const value = {
+    cart,
+    setCart,
+    quantities,
+    setQuantities,
+    serveOption,
+    setServeOption,
+    userEmail,
+    setUserEmail,
+    userRole, // NEW: Expose userRole
+    lastOrdered,
+    setLastOrdered,
+    resetCart,
+    userName,
+    setUserName,
+    totalAllowance,
+    remainingAllowance,
+    completeOrderAndDeductBalance,
+    handleAddTopUp,
+    login, // NEW: Expose login function
+    logout,
+    addOrderToHistory,
+    addTopUpToHistory, 
+    topUpHistory,
+    notification,
+    showNotification,
+    hideNotification,
+    orderReadyNotification,
+    showOrderReadyNotification,
+    hideOrderReadyNotification,
+    activeOrders,
+    startOrderReadyTimer,
+    cancelOrderTimer,
+    getOrderRemainingTime
+  };
+
   return (
-    <AppContext.Provider
-      value={{
-        // Existing values
-        cart,
-        setCart,
-        quantities,
-        setQuantities,
-        serveOption,
-        setServeOption,
-        userEmail,
-        setUserEmail,
-        lastOrdered,
-        setLastOrdered,
-        resetCart,
-        userName,
-        setUserName,
-        totalAllowance,
-        remainingAllowance,
-        completeOrderAndDeductBalance,
-        handleAddTopUp,
-        logout,
-        addOrderToHistory,
-        addTopUpToHistory, 
-        topUpHistory,
-        
-        // 🎯 UPDATED: Enhanced notification system
-        notification,
-        showNotification,
-        hideNotification,
-        
-        // 🎯 UPDATED: Enhanced order ready notification system
-        orderReadyNotification,
-        showOrderReadyNotification,
-        hideOrderReadyNotification,
-        activeOrders,
-        startOrderReadyTimer,
-        cancelOrderTimer,
-        getOrderRemainingTime
-      }}
-    >
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
 };
 
+// Custom hook to easily access the context
 export const useAppContext = () => useContext(AppContext);
