@@ -24,7 +24,8 @@ export default function Menu() {
     { name: 'Porridge', price: 400, status: 'available', image: '/porridge.jpeg' },
     { name: 'Rice and Beans', price: 600, status: 'available', image: '/RRice and beans.jpeg' },
     { name: 'Spaghetti', price: 500, status: 'unavailable', image: 'Spaghetti.jpeg' },
-    { name: 'Yam & Egg', price: 400, status: 'available', image: 'Yam and Egg.jpeg' },
+    { name: 'Yam & Egg', price: 600, status: 'available', image: 'Yam and Egg.jpeg' },
+    {name: 'Beef',price: 400,status:'available', image:'/Meatt.jpeg'},
   ]);
 
   const [quantities, setQuantities] = useState({});
